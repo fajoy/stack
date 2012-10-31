@@ -1,0 +1,2 @@
+#!/bin/sh
+nova dns-domains $@

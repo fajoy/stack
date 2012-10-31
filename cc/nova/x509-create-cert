@@ -1,0 +1,2 @@
+#!/bin/sh
+nova x509-create-cert $@

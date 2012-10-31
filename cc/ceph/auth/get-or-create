@@ -1,0 +1,2 @@
+#!/bin/sh
+ceph auth get-or-create $@
