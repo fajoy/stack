@@ -1,0 +1,91 @@
+
+mkcephfs -v -a -c /etc/ceph/ceph.conf --mkbtrfs
+
+#export crushmap
+ceph osd getcrushmap -o /etc/ceph/crushmap
+#parse crushmap
+crushtool -d /etc/ceph/crushmap -o /etc/ceph/crushmap.conf
+
+#compile crushmap
+crushtool -c  /etc/ceph/crushmap.conf -o /etc/ceph/crushmap
+
+#import crushmap
+ceph osd setcrushmap -i /etc/ceph/crushmap
+
+
+/etc/init.d/ceph -a start osd.0 ...
+
+#check service
+ceph auth list
+ceph -s
+ceph osd tree
+
+#check use disk size
+rados df
+
+#show keyring 
+ceph auth list
+
+#set replication 
+ceph osd pool set <pool> size 3
+
+#create pool
+ceph osd pool create foorbd
+rados df
+
+
+
+#rbd use
+#http://ceph.com/docs/master/rbd/rados-rbd-cmds/
+#http://ceph.com/wiki/Rbd
+#http://ceph.com/docs/master/man/8/rbd/
+rbd create foo -p foorbd --size 1024
+
+#resize
+rbd resize --image foo  -p foorbd --size 2048 (here we resize it to 2G)
+
+#Remove image:
+rbd rm foo -p foorbd
+
+#You can list current rbd images with
+$ rbd list -p foorbd
+foo
+
+#create keyring
+ceph-authtool --create-keyring foo.keyring
+ceph-authtool --gen-key --name client.foo foo.keyring
+
+#import key
+ceph auth add client.foo osd 'allow rwx pool=foorbd' -i foo.keyring
+ceph auth list
+ceph auth add client.foo mds 'allow' mon 'allow r' osd 'allow rwx pool=data  rwx pool=rbd'
+
+
+
+#client
+#/etc/ceph/ceph.conf
+[global]
+        auth supported = cephx
+
+
+
+#/etc/ceph/keyring
+
+[client.foo]
+        key = AQBh04hQIE41DBAAE2LQfo50Ob88IQ5hEIqOnw==
+
+rbd list --id foo -m mon0:6789 -p foorbd
+
+#~/foo.key
+AQBh04hQIE41DBAAE2LQfo50Ob88IQ5hEIqOnw==
+
+rbd map foorbd/foo --user foo --secret ~/foo.key -m mom0:6789 
+
+rbd unmap /dev/rbd/rbd/foorbd/foo
+
+http://ceph.com/docs/master/rbd/rbd-ko/
+http://ceph.com/docs/master/install/debian/
+
+
+
+ceph-fuse /mnt/ceph --id foo -m mom0
